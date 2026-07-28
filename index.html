@@ -27,10 +27,6 @@
             <label class="field-label" for="pkgFrom">from / your name</label>
             <input type="text" id="pkgFrom" placeholder="bestie" maxlength="40">
           </div>
-          <div class="parcel-label__contact">
-            <label class="field-label" for="pkgContact">your whatsapp / email <span class="field-hint">(so they can reply 💌)</span></label>
-            <input type="text" id="pkgContact" placeholder="+91 9876543210 or you@email.com" maxlength="80">
-          </div>
         </div>
       </div>
     </section>
@@ -161,14 +157,58 @@
     <button class="modal-close" id="shareSuccessClose" type="button" aria-label="Close">&#10005;</button>
     <p class="share-success-eyebrow">package ready</p>
     <h3 class="share-success-title" id="shareSuccessTitle">Your package is ready to send</h3>
-    <p class="share-success-copy">Copy and save this link now — you won't see it again. Then text it, email it, or share it however you like:</p>
+    <p class="share-success-copy">Copy and share this link with your friend:</p>
     <label class="share-success-label" for="shareSuccessLink">Their package link</label>
     <div class="share-success-link-row">
       <input type="text" id="shareSuccessLink" readonly>
       <button id="shareSuccessCopy" type="button">Copy link</button>
     </div>
     <p class="share-success-copied" id="shareSuccessCopied" hidden>Copied — go send it!</p>
-    <button id="shareSuccessDone" class="secondary" type="button">Done</button>
+    
+    <div class="tracker-divider"></div>
+    
+    <h4 class="tracker-modal-title">💓 Live Reply Tracker</h4>
+    <p class="share-success-copy">Keep this tab open to see replies in real-time, or save this tracker link to check later:</p>
+    <div class="share-success-link-row">
+      <input type="text" id="shareTrackerLink" readonly>
+      <button id="shareTrackerCopy" type="button">Copy tracker</button>
+    </div>
+    <p class="share-success-copied" id="shareTrackerCopied" hidden>Copied tracker link!</p>
+    
+    <div class="tracker-status-box" id="modalTrackerStatusBox">
+      <div class="tracker-spinner"></div>
+      <span class="tracker-status-text" id="modalTrackerStatusText">Waiting for recipient to reply...</span>
+    </div>
+    
+    <button id="shareSuccessDone" class="secondary" type="button">Close</button>
+  </div>
+</div>
+
+<div id="trackerView" style="display:none;">
+  <button type="button" class="edit-pkg-btn" id="trackerBackBtn">← Back to Builder</button>
+  <div class="tracker-layout">
+    <section class="panel panel--receipt panel--tracker">
+      <header class="receipt-head">
+        <p class="receipt-store">goodiesforyou</p>
+        <p class="receipt-addr">live package tracker</p>
+        <h2 class="section-stamp section-stamp--mailbox">📮</h2>
+        <h3 class="tracker-headline">Your Reply Mailbox</h3>
+        <p class="receipt-meta">PACKAGE ID: <span id="trackerPkgId"></span></p>
+      </header>
+      <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+      <div class="tracker-status-bar" id="dashboardStatus">
+        <div class="tracker-spinner"></div> Waiting for your recipient to open and reply...
+      </div>
+      <div class="receipt-rule" aria-hidden="true"></div>
+      <div class="tracker-replies-container" id="dashboardReplies">
+        <div class="no-replies-placeholder" id="dashboardRepliesPlaceholder">No replies received yet. Send the package link to your friend! 💌</div>
+      </div>
+      <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+      <footer class="receipt-foot">
+        <div class="receipt-barcode" aria-hidden="true"></div>
+        <p class="receipt-bye">thank you for sharing love</p>
+      </footer>
+    </section>
   </div>
 </div>
 

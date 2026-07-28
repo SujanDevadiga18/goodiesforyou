@@ -607,11 +607,21 @@
     });
   }
 
+  function generateId(length) {
+    var chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var result = '';
+    for (var i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
   function collectState() {
     state.title = document.getElementById("pkgTitle").value.trim() || "cutie";
     state.from = document.getElementById("pkgFrom").value.trim() || "bestie";
-    var contactEl = document.getElementById("pkgContact");
-    state.contact = contactEl ? contactEl.value.trim() : "";
+    if (!state.id) {
+      state.id = 'pkg_' + generateId(12);
+    }
     return state;
   }
 
@@ -622,6 +632,8 @@
     box.style.display = msg ? "block" : "none";
   }
 
+  var trackerInterval = null;
+
   function generateClientLink() {
     showError("");
     var pkg = collectState();
@@ -631,13 +643,14 @@
     }
 
     var jsonStr = JSON.stringify({
+      id: pkg.id,
       t: pkg.title,
       f: pkg.from,
-      c: pkg.contact || "",
       i: pkg.items
     });
     var encoded = btoa(encodeURIComponent(jsonStr));
     var fullUrl = location.origin + location.pathname + "#pkg=" + encoded;
+    var trackerUrl = location.origin + location.pathname + "#track=" + pkg.id;
 
     var out = document.getElementById("linkOutput");
     if (out) out.value = fullUrl;
@@ -645,15 +658,31 @@
     var shareInput = document.getElementById("shareSuccessLink");
     if (shareInput) shareInput.value = fullUrl;
 
+    var trackerInput = document.getElementById("shareTrackerLink");
+    if (trackerInput) trackerInput.value = trackerUrl;
+
+    // Reset live status spinner & text
+    var statusText = document.getElementById("modalTrackerStatusText");
+    if (statusText) statusText.textContent = "Waiting for recipient to reply...";
+    var spinner = document.querySelector("#modalTrackerStatusBox .tracker-spinner");
+    if (spinner) spinner.style.display = "";
+
     var backdrop = document.getElementById("shareSuccessBackdrop");
     if (backdrop) {
       backdrop.hidden = false;
       backdrop.classList.add("visible");
       document.body.classList.add("modal-open");
     }
+
+    // Start live tracking for replies on the modal
+    startLiveReplyTracker(pkg.id, 'modal');
   }
 
   function closeShareSuccessPopup() {
+    if (trackerInterval) {
+      clearInterval(trackerInterval);
+      trackerInterval = null;
+    }
     var backdrop = document.getElementById("shareSuccessBackdrop");
     if (!backdrop) return;
     backdrop.classList.remove("visible");
@@ -819,26 +848,66 @@
   }
 
   var currentPkgSender = "";
-  var currentPkgContact = "";
+  var currentPkgId = "";
 
   function checkHashRoute() {
     var hash = window.location.hash;
+    // Clear any active polling interval on route change
+    if (trackerInterval) {
+      clearInterval(trackerInterval);
+      trackerInterval = null;
+    }
+
     if (hash && hash.indexOf("#pkg=") === 0) {
       try {
         var jsonStr = decodeURIComponent(atob(hash.replace("#pkg=", "")));
         var data = JSON.parse(jsonStr);
         currentPkgSender = data.f || "bestie";
-        currentPkgContact = data.c || "";
+        currentPkgId = data.id || "";
         renderRecipientView({
           title: data.t || "cutie",
           from: data.f || "bestie",
-          contact: data.c || "",
           items: data.i || []
         });
       } catch (err) {
         console.error("Invalid package link", err);
       }
+    } else if (hash && hash.indexOf("#track=") === 0) {
+      var pkgId = hash.replace("#track=", "");
+      currentPkgId = pkgId;
+      renderTrackerView(pkgId);
+    } else {
+      // Show builder view, hide others
+      document.documentElement.classList.remove("is-recipient", "is-preview");
+      document.getElementById("recipientView").style.display = "none";
+      document.getElementById("trackerView").style.display = "none";
+      document.getElementById("builderView").style.display = "block";
     }
+  }
+
+  function renderTrackerView(packageId) {
+    document.documentElement.classList.remove("is-recipient", "is-preview");
+    document.getElementById("builderView").style.display = "none";
+    document.getElementById("recipientView").style.display = "none";
+    
+    var trackView = document.getElementById("trackerView");
+    if (trackView) trackView.style.display = "block";
+    
+    var pkgIdEl = document.getElementById("trackerPkgId");
+    if (pkgIdEl) pkgIdEl.textContent = packageId;
+    
+    // Clear previous replies
+    var repliesContainer = document.getElementById("dashboardReplies");
+    if (repliesContainer) {
+      repliesContainer.innerHTML = '<div class="no-replies-placeholder" id="dashboardRepliesPlaceholder">No replies received yet. Send the package link to your friend! 💌</div>';
+    }
+    
+    var status = document.getElementById("dashboardStatus");
+    if (status) {
+      status.innerHTML = '<div class="tracker-spinner"></div> Connecting to live database...';
+    }
+    
+    startLiveReplyTracker(packageId, 'dashboard');
   }
 
   // ---------- Init ----------
@@ -906,6 +975,22 @@
     window.addEventListener("hashchange", checkHashRoute);
     checkHashRoute();
 
+    // Tracker page back button
+    var trackerBackBtn = document.getElementById("trackerBackBtn");
+    if (trackerBackBtn) {
+      trackerBackBtn.addEventListener("click", function () {
+        window.location.hash = "";
+      });
+    }
+
+    // Share success tracker copy
+    var trackerCopyBtn = document.getElementById("shareTrackerCopy");
+    if (trackerCopyBtn) {
+      trackerCopyBtn.addEventListener("click", function () {
+        copyShareLink("shareTrackerLink", "shareTrackerCopied");
+      });
+    }
+
     // Reply modal handlers
     var replyClose = document.getElementById("replyClose");
     if (replyClose) replyClose.addEventListener("click", closeReplyModal);
@@ -922,6 +1007,82 @@
 
     var replySendBtn = document.getElementById("replySendBtn");
     if (replySendBtn) replySendBtn.addEventListener("click", sendReply);
+  }
+
+  // ---------- Live Reply Tracker Polling ----------
+  var knownReplyCount = 0;
+
+  function startLiveReplyTracker(packageId, mode) {
+    if (trackerInterval) {
+      clearInterval(trackerInterval);
+    }
+    
+    knownReplyCount = 0;
+    
+    // Poll immediately, then every 3 seconds
+    pollReplies(packageId, mode);
+    trackerInterval = setInterval(function () {
+      pollReplies(packageId, mode);
+    }, 3000);
+  }
+
+  function pollReplies(packageId, mode) {
+    fetch('/api/get-replies?packageId=' + encodeURIComponent(packageId))
+      .then(function (res) {
+        if (!res.ok) throw new Error('Status: ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.success && data.replies) {
+          renderReplies(data.replies, mode);
+        }
+      })
+      .catch(function (err) {
+        console.warn('Polling error:', err);
+      });
+  }
+
+  function renderReplies(replies, mode) {
+    if (mode === 'modal') {
+      var statusText = document.getElementById("modalTrackerStatusText");
+      var spinner = document.querySelector("#modalTrackerStatusBox .tracker-spinner");
+      if (replies.length > 0) {
+        if (statusText) statusText.textContent = "Received a reply! 💝";
+        if (spinner) spinner.style.display = "none";
+      } else {
+        if (statusText) statusText.textContent = "Waiting for recipient to reply...";
+        if (spinner) spinner.style.display = "";
+      }
+    } else if (mode === 'dashboard') {
+      var status = document.getElementById("dashboardStatus");
+      var repliesContainer = document.getElementById("dashboardReplies");
+      
+      if (status) {
+        if (replies.length > 0) {
+          status.innerHTML = "💌 " + replies.length + " reply(replies) received!";
+        } else {
+          status.innerHTML = '<div class="tracker-spinner"></div> Waiting for your recipient to open and reply...';
+        }
+      }
+
+      if (repliesContainer) {
+        if (replies.length === 0) {
+          repliesContainer.innerHTML = '<div class="no-replies-placeholder" id="dashboardRepliesPlaceholder">No replies received yet. Send the package link to your friend! 💌</div>';
+        } else {
+          repliesContainer.innerHTML = "";
+          replies.forEach(function (r) {
+            var timeStr = new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            var dateStr = new Date(r.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+            
+            var item = el("div", { class: "reply-item" }, [
+              el("div", { class: "reply-item-text", text: r.text }),
+              el("div", { class: "reply-item-meta", text: dateStr + " at " + timeStr })
+            ]);
+            repliesContainer.appendChild(item);
+          });
+        }
+      }
+    }
   }
 
   // ---------- Reply Modal ----------
@@ -951,50 +1112,52 @@
   function sendReply() {
     var replyText = document.getElementById("replyText").value.trim();
     if (!replyText) {
-      replyText = "Thank you so much for the care package! \u2764\ufe0f It made my day! \ud83d\udc95";
+      replyText = "Thank you so much for the care package! ❤️ It made my day! 💖";
     }
 
-    var contact = currentPkgContact;
-    var senderName = currentPkgSender;
-    var fullMsg = "\ud83d\udc8c Reply from your Care Package recipient!\n\n" + replyText + "\n\n\u2014 sent with love via goodiesforyou \ud83c\udf81\ud83d\udc95";
+    var sendBtn = document.getElementById("replySendBtn");
+    if (sendBtn) sendBtn.disabled = true;
 
-    if (contact) {
-      // Check if it's a phone number (WhatsApp) or email
-      var isPhone = /^[\+]?[0-9\s\-\(\)]{7,}$/.test(contact.replace(/\s/g, ""));
-      var isEmail = contact.indexOf("@") > -1;
+    fetch('/api/send-reply', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        packageId: currentPkgId,
+        message: replyText
+      })
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to send');
+      return res.json();
+    })
+    .then(function (data) {
+      // Show success state
+      document.getElementById("replySendBtn").style.display = "none";
+      document.getElementById("replySentMsg").hidden = false;
 
-      if (isPhone) {
-        var cleanPhone = contact.replace(/[^\d+]/g, "");
-        var waUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(fullMsg);
-        window.open(waUrl, "_blank");
-      } else if (isEmail) {
-        var subject = encodeURIComponent("\ud83d\udc8c A cute reply to your Care Package!");
-        var body = encodeURIComponent(fullMsg);
-        window.open("mailto:" + contact + "?subject=" + subject + "&body=" + body, "_blank");
-      } else {
-        // Fallback — try WhatsApp with whatever they entered
-        var waUrl2 = "https://wa.me/" + contact.replace(/[^\d+]/g, "") + "?text=" + encodeURIComponent(fullMsg);
-        window.open(waUrl2, "_blank");
+      // Update hug button
+      var sendLoveBtn = document.getElementById("sendLoveBtn");
+      if (sendLoveBtn) sendLoveBtn.textContent = "Reply Sent! 🥰";
+      var loveSentMsg = document.getElementById("loveSentMsg");
+      if (loveSentMsg) {
+        loveSentMsg.textContent = "Your sweet reply has been sent! 💝✨";
+        loveSentMsg.hidden = false;
       }
-    }
 
-    // Show success state
-    document.getElementById("replySendBtn").style.display = "none";
-    document.getElementById("replySentMsg").hidden = false;
-
-    // Update hug button
-    var sendLoveBtn = document.getElementById("sendLoveBtn");
-    if (sendLoveBtn) sendLoveBtn.textContent = "Reply Sent! \ud83e\udd70";
-    var loveSentMsg = document.getElementById("loveSentMsg");
-    if (loveSentMsg) {
-      loveSentMsg.textContent = contact ? "Your sweet reply has been sent to " + senderName + "! \ud83d\udc95\u2728" : "Hug & love sent back to your friend! \ud83d\udc95\u2728";
-      loveSentMsg.hidden = false;
-    }
-
-    // Close modal after a moment
-    setTimeout(function () {
-      closeReplyModal();
-    }, 2500);
+      // Close modal after a moment
+      setTimeout(function () {
+        closeReplyModal();
+      }, 2000);
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert("Oops! Failed to send reply back. Please try again!");
+    })
+    .finally(function () {
+      if (sendBtn) sendBtn.disabled = false;
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);
