@@ -27,6 +27,10 @@
             <label class="field-label" for="pkgFrom">from / your name</label>
             <input type="text" id="pkgFrom" placeholder="bestie" maxlength="40">
           </div>
+          <div class="parcel-label__contact">
+            <label class="field-label" for="pkgContact">your whatsapp / email <span class="field-hint">(so they can reply 💌)</span></label>
+            <input type="text" id="pkgContact" placeholder="+91 9876543210 or you@email.com" maxlength="80">
+          </div>
         </div>
       </div>
     </section>
@@ -165,6 +169,31 @@
     </div>
     <p class="share-success-copied" id="shareSuccessCopied" hidden>Copied — go send it!</p>
     <button id="shareSuccessDone" class="secondary" type="button">Done</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="replyBackdrop" hidden>
+  <div class="modal-card modal-card--reply" id="replyCard" role="dialog" aria-modal="true">
+    <button class="modal-close" id="replyClose" type="button" aria-label="Close">&#10005;</button>
+    <div class="reply-header">
+      <div class="reply-hearts">💌 💕 🤗</div>
+      <h3 class="reply-title">Send a Cute Reply Back!</h3>
+      <p class="reply-subtitle">your friend will get this message — make it sweet 🍯</p>
+    </div>
+    <div class="reply-quick-picks" id="replyQuickPicks">
+      <button type="button" class="reply-quick-btn" data-msg="Thank you so much! This made my whole day! 🥺💕">🥺 This made my day!</button>
+      <button type="button" class="reply-quick-btn" data-msg="I love you so much! You're the best friend ever! 😭❤️">😭 I love you!</button>
+      <button type="button" class="reply-quick-btn" data-msg="You're literally the sweetest human alive! 🤗💖">🤗 You're the sweetest!</button>
+      <button type="button" class="reply-quick-btn" data-msg="I'm literally crying right now 😢 This is so beautiful! 💝">😢 I'm crying rn!</button>
+      <button type="button" class="reply-quick-btn" data-msg="Sending you the biggest hug in the world right now! 🫂✨">🫂 Biggest hug!</button>
+    </div>
+    <label class="reply-label" for="replyText">or write your own sweet reply:</label>
+    <textarea id="replyText" class="reply-textarea" rows="3" placeholder="type something cute here... 💕"></textarea>
+    <button type="button" class="reply-send-btn" id="replySendBtn">💌 Send My Reply</button>
+    <div class="reply-sent-msg" id="replySentMsg" hidden>
+      <div class="reply-sent-icon">💝</div>
+      <div class="reply-sent-text">Your reply has been sent with love!</div>
+    </div>
   </div>
 </div>
 

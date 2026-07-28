@@ -610,6 +610,8 @@
   function collectState() {
     state.title = document.getElementById("pkgTitle").value.trim() || "cutie";
     state.from = document.getElementById("pkgFrom").value.trim() || "bestie";
+    var contactEl = document.getElementById("pkgContact");
+    state.contact = contactEl ? contactEl.value.trim() : "";
     return state;
   }
 
@@ -631,6 +633,7 @@
     var jsonStr = JSON.stringify({
       t: pkg.title,
       f: pkg.from,
+      c: pkg.contact || "",
       i: pkg.items
     });
     var encoded = btoa(encodeURIComponent(jsonStr));
@@ -815,15 +818,21 @@
     window.location.hash = "";
   }
 
+  var currentPkgSender = "";
+  var currentPkgContact = "";
+
   function checkHashRoute() {
     var hash = window.location.hash;
     if (hash && hash.indexOf("#pkg=") === 0) {
       try {
         var jsonStr = decodeURIComponent(atob(hash.replace("#pkg=", "")));
         var data = JSON.parse(jsonStr);
+        currentPkgSender = data.f || "bestie";
+        currentPkgContact = data.c || "";
         renderRecipientView({
           title: data.t || "cutie",
           from: data.f || "bestie",
+          contact: data.c || "",
           items: data.i || []
         });
       } catch (err) {
@@ -850,9 +859,7 @@
     if (sendLoveBtn) {
       sendLoveBtn.addEventListener("click", function (e) {
         spawnHeartBurst(e);
-        sendLoveBtn.textContent = "Hug Sent! 🥰";
-        var msg = document.getElementById("loveSentMsg");
-        if (msg) msg.hidden = false;
+        openReplyModal();
       });
     }
 
@@ -898,6 +905,96 @@
 
     window.addEventListener("hashchange", checkHashRoute);
     checkHashRoute();
+
+    // Reply modal handlers
+    var replyClose = document.getElementById("replyClose");
+    if (replyClose) replyClose.addEventListener("click", closeReplyModal);
+
+    var quickBtns = document.querySelectorAll(".reply-quick-btn");
+    quickBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        quickBtns.forEach(function (b) { b.classList.remove("selected"); });
+        btn.classList.add("selected");
+        var ta = document.getElementById("replyText");
+        if (ta) ta.value = btn.getAttribute("data-msg");
+      });
+    });
+
+    var replySendBtn = document.getElementById("replySendBtn");
+    if (replySendBtn) replySendBtn.addEventListener("click", sendReply);
+  }
+
+  // ---------- Reply Modal ----------
+  function openReplyModal() {
+    var backdrop = document.getElementById("replyBackdrop");
+    if (!backdrop) return;
+    // Reset state
+    document.getElementById("replySentMsg").hidden = true;
+    document.getElementById("replySendBtn").style.display = "";
+    document.getElementById("replyText").value = "";
+    var quickBtns = document.querySelectorAll(".reply-quick-btn");
+    quickBtns.forEach(function (b) { b.classList.remove("selected"); });
+
+    backdrop.hidden = false;
+    backdrop.classList.add("visible");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeReplyModal() {
+    var backdrop = document.getElementById("replyBackdrop");
+    if (!backdrop) return;
+    backdrop.classList.remove("visible");
+    backdrop.hidden = true;
+    document.body.classList.remove("modal-open");
+  }
+
+  function sendReply() {
+    var replyText = document.getElementById("replyText").value.trim();
+    if (!replyText) {
+      replyText = "Thank you so much for the care package! \u2764\ufe0f It made my day! \ud83d\udc95";
+    }
+
+    var contact = currentPkgContact;
+    var senderName = currentPkgSender;
+    var fullMsg = "\ud83d\udc8c Reply from your Care Package recipient!\n\n" + replyText + "\n\n\u2014 sent with love via goodiesforyou \ud83c\udf81\ud83d\udc95";
+
+    if (contact) {
+      // Check if it's a phone number (WhatsApp) or email
+      var isPhone = /^[\+]?[0-9\s\-\(\)]{7,}$/.test(contact.replace(/\s/g, ""));
+      var isEmail = contact.indexOf("@") > -1;
+
+      if (isPhone) {
+        var cleanPhone = contact.replace(/[^\d+]/g, "");
+        var waUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(fullMsg);
+        window.open(waUrl, "_blank");
+      } else if (isEmail) {
+        var subject = encodeURIComponent("\ud83d\udc8c A cute reply to your Care Package!");
+        var body = encodeURIComponent(fullMsg);
+        window.open("mailto:" + contact + "?subject=" + subject + "&body=" + body, "_blank");
+      } else {
+        // Fallback — try WhatsApp with whatever they entered
+        var waUrl2 = "https://wa.me/" + contact.replace(/[^\d+]/g, "") + "?text=" + encodeURIComponent(fullMsg);
+        window.open(waUrl2, "_blank");
+      }
+    }
+
+    // Show success state
+    document.getElementById("replySendBtn").style.display = "none";
+    document.getElementById("replySentMsg").hidden = false;
+
+    // Update hug button
+    var sendLoveBtn = document.getElementById("sendLoveBtn");
+    if (sendLoveBtn) sendLoveBtn.textContent = "Reply Sent! \ud83e\udd70";
+    var loveSentMsg = document.getElementById("loveSentMsg");
+    if (loveSentMsg) {
+      loveSentMsg.textContent = contact ? "Your sweet reply has been sent to " + senderName + "! \ud83d\udc95\u2728" : "Hug & love sent back to your friend! \ud83d\udc95\u2728";
+      loveSentMsg.hidden = false;
+    }
+
+    // Close modal after a moment
+    setTimeout(function () {
+      closeReplyModal();
+    }, 2500);
   }
 
   document.addEventListener("DOMContentLoaded", init);
