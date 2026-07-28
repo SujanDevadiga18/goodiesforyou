@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F7F1E6">
+  <title>digital care package</title>
+  <link rel="icon" href="assets/note.png" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="wrap" id="builderView">
+  <div class="builder-layout">
+    <section class="panel panel--parcel">
+      <div class="parcel-label">
+        <img class="parcel-label__bg" src="assets/shipping-label.webp" alt="Digital care package shipping label">
+        <div class="parcel-label__fields">
+          <div class="parcel-label__to">
+            <label class="field-label" for="pkgTitle">to / title</label>
+            <input type="text" id="pkgTitle" placeholder="cutie" maxlength="60">
+          </div>
+          <div class="parcel-label__from">
+            <label class="field-label" for="pkgFrom">from / your name</label>
+            <input type="text" id="pkgFrom" placeholder="bestie" maxlength="40">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="builder-receipts">
+      <section class="panel panel--receipt panel--tuck">
+        <header class="receipt-head">
+          <p class="receipt-store">A Little Box of Goodies</p>
+          <p class="receipt-addr">est. for sending a little care</p>
+          <h2 class="section-stamp">
+            <img src="assets/stamp-tuck.webp" alt="things to tuck inside">
+          </h2>
+          <p class="receipt-meta">*** SELECT ITEMS TO TUCK ***</p>
+        </header>
+        <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+        <div class="receipt-cols" aria-hidden="true">
+          <span>ITEM</span>
+          <span>ADD</span>
+        </div>
+        <div class="receipt-rule" aria-hidden="true"></div>
+        <div class="type-grid" id="typeGrid"></div>
+        <div class="receipt-rule" aria-hidden="true"></div>
+        <div class="receipt-cols" aria-hidden="true">
+          <span>IN CART</span>
+          <span>QTY</span>
+        </div>
+        <div class="receipt-rule" aria-hidden="true"></div>
+        <div class="item-list" id="itemList"></div>
+        <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+        <footer class="receipt-foot">
+          <div class="receipt-barcode" aria-hidden="true"></div>
+          <p class="receipt-thanks">THANK YOU FOR CARING</p>
+          <p class="receipt-bye">have a nice day :)</p>
+        </footer>
+      </section>
+
+      <section class="panel panel--receipt panel--share">
+        <header class="receipt-head">
+          <p class="receipt-store">A Little Box of Goodies</p>
+          <p class="receipt-addr">share your parcel</p>
+          <h2 class="section-stamp section-stamp--share">
+            <img src="assets/stamp-share.webp" alt="send your package">
+          </h2>
+          <p class="receipt-meta">*** GET YOUR SHAREABLE LINK ***</p>
+        </header>
+        <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+        <div class="share-actions">
+          <button id="generateBtn" type="button">Generate Link</button>
+          <button id="previewBtn" class="secondary" type="button">Preview</button>
+        </div>
+        <div class="link-box" id="linkResult">
+          <input type="text" id="linkOutput" readonly>
+          <button id="copyBtn" class="secondary small" type="button">Copy</button>
+        </div>
+        <span class="copied-msg" id="copiedMsg">copied</span>
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="receipt-rule receipt-rule--double" aria-hidden="true"></div>
+        <footer class="receipt-foot">
+          <div class="receipt-barcode" aria-hidden="true"></div>
+          <p class="receipt-bye">send it to someone special</p>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <footer class="hint">
+    <span class="hint-credit">created with ❤️ by Sujan</span>
+    this package will be delivered with care and love 💕
+  </footer>
+</div>
+
+<div id="recipientView">
+  <button type="button" class="edit-pkg-btn" id="editPkgBtn">← Back to Home</button>
+  <div class="notfound-msg" id="notfoundMsg" style="display:none;">This package link doesn't exist (or was typed wrong).</div>
+  <div class="stage" id="stage" style="display:none;">
+    <div class="box-screen" id="boxScreen">
+      <div class="pkg-title" id="rTitle">you've got mail ❤️</div>
+      <div class="box-scene">
+        <button class="box-photo-btn bare" id="openBtn" type="button">
+          <img id="boxImg" src="" alt="digital care package">
+          <div class="box-label" aria-hidden="true">
+            <img class="box-label__bg" src="assets/shipping-label.webp" alt="">
+            <div class="box-label__fields">
+              <div class="box-label__to" id="boxLabelTo"></div>
+              <div class="box-label__from" id="boxLabelFrom"></div>
+            </div>
+          </div>
+        </button>
+      </div>
+      <div class="tap-pill">tap to open ❤️</div>
+      <div class="pkg-from" id="rFrom"></div>
+    </div>
+    <div class="open-screen" id="openScreen">
+      <div class="open-header">
+        <div class="pkg-title" id="oTitle">your little box of goodies 💕</div>
+        <div class="pkg-msg" id="oMsg">someone who cares about you packed these special goodies just for you 💌</div>
+      </div>
+      <div id="floatyHost"></div>
+      <div class="send-love-back-wrap" id="sendLoveBackWrap">
+        <button type="button" class="send-love-btn" id="sendLoveBtn">Send a Hug Back 🤗❤️</button>
+        <div class="love-sent-msg" id="loveSentMsg" hidden>Hug &amp; love sent back to your friend! 💕✨</div>
+      </div>
+    </div>
+  </div>
+  <footer class="hint" id="recipientFooter" hidden>
+    <span class="hint-credit">created with ❤️ by Sujan</span>
+    made with a little box of goodies — <a href="/" id="makeOwnLink">make your own 💕</a>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" id="modalCard">
+    <button class="modal-close" id="modalClose" type="button">&#10005;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="itemFormBackdrop">
+  <div class="modal-card modal-card--form" id="itemFormCard" role="dialog" aria-modal="true" aria-labelledby="itemFormTitle">
+    <button class="modal-close" id="itemFormClose" type="button" aria-label="Close">&#10005;</button>
+    <h3 class="item-form-title" id="itemFormTitle"></h3>
+    <div id="itemFormHost"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="shareSuccessBackdrop" hidden>
+  <div class="modal-card modal-card--share-success" id="shareSuccessCard" role="dialog" aria-modal="true" aria-labelledby="shareSuccessTitle">
+    <button class="modal-close" id="shareSuccessClose" type="button" aria-label="Close">&#10005;</button>
+    <p class="share-success-eyebrow">package ready</p>
+    <h3 class="share-success-title" id="shareSuccessTitle">Your package is ready to send</h3>
+    <p class="share-success-copy">Copy and save this link now — you won't see it again. Then text it, email it, or share it however you like:</p>
+    <label class="share-success-label" for="shareSuccessLink">Their package link</label>
+    <div class="share-success-link-row">
+      <input type="text" id="shareSuccessLink" readonly>
+      <button id="shareSuccessCopy" type="button">Copy link</button>
+    </div>
+    <p class="share-success-copied" id="shareSuccessCopied" hidden>Copied — go send it!</p>
+    <button id="shareSuccessDone" class="secondary" type="button">Done</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

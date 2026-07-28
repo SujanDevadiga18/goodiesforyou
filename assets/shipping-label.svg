@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" width="600" height="240">
+  <defs>
+    <linearGradient id="paperBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FBF7EE"/>
+      <stop offset="100%" stop-color="#F3ECE0"/>
+    </linearGradient>
+    <pattern id="airmail" x="0" y="0" width="40" height="12" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 12,0 0,12" fill="#D34E36"/>
+      <polygon points="12,0 24,0 12,12" fill="#FFFFFF"/>
+      <polygon points="24,0 36,0 24,12" fill="#2B5B84"/>
+      <polygon points="36,0 40,0 40,4 36,12" fill="#FFFFFF"/>
+    </pattern>
+    <filter id="grunge">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.05 0"/>
+      <feComposite operator="in" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- Main Label Card -->
+  <rect x="4" y="4" width="592" height="232" rx="12" fill="url(#paperBg)" stroke="#D8CDBA" stroke-width="3"/>
+  <rect x="10" y="10" width="580" height="220" rx="8" fill="none" stroke="#2B2621" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- Top Airmail Stripe -->
+  <rect x="12" y="12" width="576" height="10" fill="url(#airmail)" opacity="0.85"/>
+
+  <!-- Postal Postmarks -->
+  <g opacity="0.18" fill="#1A1815">
+    <!-- Circle Postmark -->
+    <circle cx="520" cy="60" r="32" fill="none" stroke="#1A1815" stroke-width="3"/>
+    <circle cx="520" cy="60" r="26" fill="none" stroke="#1A1815" stroke-width="1"/>
+    <text x="520" y="52" font-family="Courier New, monospace" font-size="9" font-weight="bold" text-anchor="middle">PARCEL POST</text>
+    <text x="520" y="66" font-family="Courier New, monospace" font-size="11" font-weight="bold" text-anchor="middle">★ AIR ★</text>
+    <text x="520" y="78" font-family="Courier New, monospace" font-size="8" text-anchor="middle">EXPRESS</text>
+
+    <!-- Wavy Cancellation Lines -->
+    <path d="M 420,50 Q 445,40 470,50 T 520,50 T 570,50" fill="none" stroke="#1A1815" stroke-width="2"/>
+    <path d="M 420,60 Q 445,50 470,60 T 520,60 T 570,60" fill="none" stroke="#1A1815" stroke-width="2"/>
+    <path d="M 420,70 Q 445,60 470,70 T 520,70 T 570,70" fill="none" stroke="#1A1815" stroke-width="2"/>
+  </g>
+
+  <!-- Priority Header -->
+  <g fill="#2B2621" font-family="'Courier Prime', 'Special Elite', monospace">
+    <text x="24" y="38" font-size="13" font-weight="bold" letter-spacing="2">PRIORITY PARCEL</text>
+    <text x="24" y="52" font-size="9" opacity="0.6" letter-spacing="1">NO. 9405 5118 9956</text>
+  </g>
+
+  <!-- Separator Line -->
+  <line x1="20" y1="62" x2="580" y2="62" stroke="#2B2621" stroke-width="2"/>
+</svg>
